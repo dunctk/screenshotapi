@@ -1,0 +1,31 @@
+# Rust build artifacts
+/target/
+Cargo.lock
+
+# Lambda build artifacts
+bootstrap
+bootstrap.zip
+*.zip
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+
+# Test outputs
+screenshot*.png
+test_*.png
+*.jpg
+*.jpeg
+
+# Logs
+*.log
