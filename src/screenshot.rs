@@ -4,8 +4,6 @@ use thiserror::Error;
 use std::time::Duration;
 use std::path::PathBuf;
 use std::ffi::OsStr;
-use std::env;
-use std::os::unix::fs::PermissionsExt;
 
 #[derive(Error, Debug)]
 pub enum ScreenshotError {
