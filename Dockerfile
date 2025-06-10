@@ -35,11 +35,11 @@ COPY --from=builder /usr/bin/tar /usr/bin/
 
 # Download and install the latest stable sparticuz-chromium build
 ENV CHROMIUM_VERSION=123.0.1
-RUN curl -Ls --fail -o /tmp/chromium.tar.gz "https://github.com/Sparticuz/chromium/releases/download/v${CHROMIUM_VERSION}/chromium-v${CHROMIUM_VERSION}-linux-x64-pack.tar.gz"
+RUN curl -Ls --fail -o /tmp/chromium.tar "https://github.com/Sparticuz/chromium/releases/download/v${CHROMIUM_VERSION}/chromium-v${CHROMIUM_VERSION}-pack.tar"
 
 # Extract the package and clean up
-RUN tar -xzf /tmp/chromium.tar.gz -C /opt && \
-    rm /tmp/chromium.tar.gz
+RUN tar -xf /tmp/chromium.tar -C /opt/ && \
+    rm /tmp/chromium.tar
 
 # Copy the built binary from the builder stage
 COPY --from=builder /src/target/lambda/screenshotapi/bootstrap /var/runtime/
