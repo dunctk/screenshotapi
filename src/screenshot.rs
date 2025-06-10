@@ -198,65 +198,14 @@ impl ScreenshotService {
 
 /// Try to find Chrome executable in common locations
 fn find_chrome_executable() -> Option<PathBuf> {
-    // Check environment variable first
-    if let Ok(chrome_path) = env::var("CHROME_PATH") {
-        let path_buf = PathBuf::from(&chrome_path);
-        if path_buf.exists() {
-            println!("Using Chrome from CHROME_PATH: {}", chrome_path);
-            return Some(path_buf);
-        }
-    }
-
-    let possible_paths = [
-        "/opt/chromium/chrome",           // Lambda layer path (Sparticuz/Chromium) - PRIORITY
-        "/usr/bin/google-chrome-stable",  // Primary path for Docker/Lambda - installed by RPM
-        "/usr/bin/google-chrome",
-        "/usr/bin/chromium-browser",
-        "/usr/bin/chromium",
-        "/snap/bin/chromium",
-        "/var/lib/snapd/snap/bin/chromium",
-        "/usr/bin/chromium-snap",
-        "/snap/chromium/current/usr/lib/chromium-browser/chrome",
-        "/opt/google/chrome/chrome",      // Alternative installation path
-        "/usr/local/bin/chrome",
-        "/usr/local/bin/google-chrome",
-    ];
-    
-    println!("Searching for Chrome executable in standard locations...");
-    for path in &possible_paths {
-        let path_buf = PathBuf::from(path);
-        println!("Checking path: {}", path);
-        if path_buf.exists() {
-            // Additional check to ensure it's executable
-            if let Ok(metadata) = std::fs::metadata(&path_buf) {
-                if metadata.permissions().mode() & 0o111 != 0 {
-                    println!("Found executable Chrome at: {}", path);
-            return Some(path_buf);
-                }
-            }
-        }
+    // Path for the self-contained sparticuz-chromium build
+    let chrome_path = "/opt/chromium/chrome";
+    let path_buf = PathBuf::from(chrome_path);
+    if path_buf.exists() {
+        println!("Found Chromium at: {}", chrome_path);
+        return Some(path_buf);
     }
     
-    println!("No Chrome executable found in standard locations");
-    
-    // Try to find via which command as fallback
-    for chrome_name in &["google-chrome-stable", "google-chrome", "chromium-browser", "chromium"] {
-    if let Ok(output) = std::process::Command::new("which")
-            .arg(chrome_name)
-        .output() {
-        if output.status.success() {
-            let path_string = String::from_utf8_lossy(&output.stdout);
-            let path_str = path_string.trim();
-            if !path_str.is_empty() {
-                    let path_buf = PathBuf::from(path_str);
-                    if path_buf.exists() {
-                        println!("Found Chrome via 'which {}': {}", chrome_name, path_str);
-                        return Some(path_buf);
-                    }
-                }
-            }
-        }
-    }
-    
+    println!("Chromium executable not found at {}", chrome_path);
     None
 } 
