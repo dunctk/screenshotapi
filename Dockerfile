@@ -4,8 +4,8 @@ ARG APP_NAME=screenshotapi
 # 1) Compile your Rust binary in a builder stage
 FROM public.ecr.aws/lambda/provided:al2023 AS builder
 
-# Install build dependencies, including tar, xz, and file for debugging
-RUN dnf install -y gcc make openssl-devel tar xz file
+# Install build dependencies, including tar and xz
+RUN dnf install -y gcc make openssl-devel tar xz
 
 # Install Zig, which is required by cargo-lambda
 ENV ZIG_VERSION=0.13.0
@@ -30,16 +30,12 @@ RUN cargo lambda build --release --bin screenshotapi
 # 2) Final image: install Chromium and copy your function
 FROM public.ecr.aws/lambda/provided:al2023
 
-# Copy tar and file from the builder stage.
+# Copy tar from the builder stage.
 COPY --from=builder /usr/bin/tar /usr/bin/
-COPY --from=builder /usr/bin/file /usr/bin/
 
 # Download and install the latest stable sparticuz-chromium build
 ENV CHROMIUM_VERSION=123.0.1
-RUN curl -Ls --fail -o /tmp/chromium.tar.gz "https://github.com/Sparticuz/chromium/releases/download/v${CHROMIUM_VERSION}/chromium-v${CHROMIUM_VERSION}-pack.tar.gz"
-
-# Debugging step: Check the actual type of the downloaded file.
-RUN file /tmp/chromium.tar.gz
+RUN curl -Ls --fail -o /tmp/chromium.tar.gz "https://github.com/Sparticuz/chromium/releases/download/v${CHROMIUM_VERSION}/chromium-v${CHROMIUM_VERSION}-linux-x64-pack.tar.gz"
 
 # Extract the package and clean up
 RUN tar -xzf /tmp/chromium.tar.gz -C /opt && \
