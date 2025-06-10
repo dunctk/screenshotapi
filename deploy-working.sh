@@ -61,13 +61,21 @@ aws lambda create-function \
     --architectures x86_64 \
     --memory-size 2048 \
     --timeout 60 \
-    --environment "Variables={RUST_LOG=info,CHROME_PATH=/opt/bin/chrome}" \
+    --environment "Variables={RUST_LOG=info,CHROME_PATH=/opt/chromium/chrome}" \
     --region $REGION > /dev/null
 
 echo -e "${GREEN}✅ Function deployed${NC}"
 
-# Step 3: Attach Chrome layer
-echo -e "${BLUE}📦 Step 3: Attaching Chrome layer...${NC}"
+# Step 3: Wait for function to be ready, then attach Chrome layer
+echo -e "${BLUE}📦 Step 3: Waiting for function to be ready...${NC}"
+
+# Wait for function to be active
+echo -e "${YELLOW}⏳ Waiting for function to initialize...${NC}"
+aws lambda wait function-active \
+    --function-name $FUNCTION_NAME \
+    --region $REGION
+
+echo -e "${BLUE}📦 Attaching Chrome layer...${NC}"
 CHROME_LAYER_ARN="arn:aws:lambda:${REGION}:764866452798:layer:chrome-aws-lambda:46"
 
 aws lambda update-function-configuration \
@@ -77,9 +85,15 @@ aws lambda update-function-configuration \
 
 echo -e "${GREEN}✅ Chrome layer attached${NC}"
 
-# Step 4: Create function URL
+# Step 4: Create function URL (delete existing first if needed)
 echo -e "${BLUE}🌐 Step 4: Setting up Function URL...${NC}"
 
+# Delete existing function URL if it exists
+aws lambda delete-function-url-config \
+    --function-name $FUNCTION_NAME \
+    --region $REGION 2>/dev/null || true
+
+# Create new function URL
 aws lambda create-function-url-config \
     --function-name $FUNCTION_NAME \
     --auth-type NONE \
