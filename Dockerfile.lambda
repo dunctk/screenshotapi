@@ -1,0 +1,30 @@
+# Use the official AWS Lambda base image for x86_64
+FROM public.ecr.aws/lambda/provided:al2-x86_64
+
+# Install Chrome and dependencies
+RUN yum update -y && yum install -y \
+    wget unzip \
+    libX11 libXcomposite libXdamage libXext libXi libXtst libXrandr \
+    alsa-lib pango atk cairo-gobject gtk3 gdk-pixbuf2 libdrm libxss \
+    xorg-x11-fonts-100dpi xorg-x11-fonts-75dpi xorg-x11-utils \
+    xorg-x11-fonts-cyrillic xorg-x11-fonts-Type1 xorg-x11-fonts-misc \
+    liberation-fonts && \
+    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y google-chrome-stable_current_x86_64.rpm && \
+    rm google-chrome-stable_current_x86_64.rpm && \
+    yum clean all
+
+# Verify Chrome installation
+RUN /usr/bin/google-chrome-stable --version
+
+# Copy the pre-built binary (built for x86_64)
+COPY target/release/screenshotapi ${LAMBDA_RUNTIME_DIR}/bootstrap
+
+# Make executable
+RUN chmod +x ${LAMBDA_RUNTIME_DIR}/bootstrap
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV CHROME_PATH=/usr/bin/google-chrome-stable
+
+CMD ["bootstrap"] 

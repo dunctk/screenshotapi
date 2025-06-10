@@ -1,0 +1,58 @@
+# Build stage using the same base as Lambda runtime
+FROM --platform=linux/amd64 public.ecr.aws/lambda/provided:al2-x86_64 as builder
+
+# Install Rust and build dependencies
+RUN yum update -y && yum install -y \
+    gcc \
+    gcc-c++ \
+    make \
+    openssl-devel \
+    curl \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && source ~/.cargo/env \
+    && rustup target add x86_64-unknown-linux-gnu
+
+# Set environment variables
+ENV PATH="/root/.cargo/bin:${PATH}"
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
+
+# Set working directory
+WORKDIR /app
+
+# Copy source files
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+
+# Build the application
+RUN source ~/.cargo/env && cargo build --release --target x86_64-unknown-linux-gnu
+
+# Runtime stage - AWS Lambda base image
+FROM --platform=linux/amd64 public.ecr.aws/lambda/provided:al2-x86_64
+
+# Install Chrome and dependencies
+RUN yum update -y && yum install -y \
+    wget unzip \
+    libX11 libXcomposite libXdamage libXext libXi libXtst libXrandr \
+    alsa-lib pango atk cairo-gobject gtk3 gdk-pixbuf2 libdrm libxss \
+    xorg-x11-fonts-100dpi xorg-x11-fonts-75dpi xorg-x11-utils \
+    xorg-x11-fonts-cyrillic xorg-x11-fonts-Type1 xorg-x11-fonts-misc \
+    liberation-fonts && \
+    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && \
+    yum install -y google-chrome-stable_current_x86_64.rpm && \
+    rm google-chrome-stable_current_x86_64.rpm && \
+    yum clean all
+
+# Verify Chrome installation
+RUN /usr/bin/google-chrome-stable --version
+
+# Copy the binary from builder stage
+COPY --from=builder /app/target/x86_64-unknown-linux-gnu/release/screenshotapi ${LAMBDA_RUNTIME_DIR}/bootstrap
+
+# Make executable
+RUN chmod +x ${LAMBDA_RUNTIME_DIR}/bootstrap
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV CHROME_PATH=/usr/bin/google-chrome-stable
+
+CMD ["bootstrap"] 

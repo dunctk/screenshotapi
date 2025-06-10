@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+We are making an aws lambda in rust that will run on x86_64 lambda. Because it uses chrome (which is only available for x86_64) and we developing on an arm machine.
+
+Please use `cargo lambda`

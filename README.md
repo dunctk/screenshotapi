@@ -17,29 +17,33 @@ A serverless screenshot API built with Rust and Chromium, designed to run on AWS
 ### Endpoint
 
 ```
-GET /screenshot?url=<URL>&width=<WIDTH>&height=<HEIGHT>&wait=<WAIT_TIME>&format=<FORMAT>
-POST /screenshot?url=<URL>&width=<WIDTH>&height=<HEIGHT>&wait=<WAIT_TIME>&format=<FORMAT>
+GET /?url=<URL>&width=<WIDTH>&height=<HEIGHT>&wait=<WAIT_TIME>
+POST /?url=<URL>&width=<WIDTH>&height=<HEIGHT>&wait=<WAIT_TIME>
 ```
 
 ### Parameters
 
 - `url` (required): The URL of the website to screenshot
-- `width` (optional): Viewport width in pixels (default: 1920)
-- `height` (optional): Viewport height in pixels (default: 1080)
+- `width` (optional): Viewport width in pixels (default: 1920, min: 320, max: 3840)
+- `height` (optional): Viewport height in pixels (default: 1080, min: 320, max: 3840)
 - `wait` (optional): Additional wait time in milliseconds after page load (default: 1000)
-- `format` (optional): Image format - "png" or "jpeg" (default: "png")
+
+**Note**: The `format` parameter is not currently implemented - all screenshots are returned as PNG.
 
 ### Example Requests
 
 ```bash
-# Basic screenshot
-curl "https://your-api-gateway-url/screenshot?url=https://example.com"
+# Basic screenshot (uses default 1920x1080)
+curl "https://your-api-gateway-url/?url=https://example.com"
 
 # Custom dimensions and wait time
-curl "https://your-api-gateway-url/screenshot?url=https://example.com&width=1280&height=720&wait=2000"
+curl "https://your-api-gateway-url/?url=https://example.com&width=1280&height=720&wait=2000"
 
-# JPEG format
-curl "https://your-api-gateway-url/screenshot?url=https://example.com&format=jpeg"
+# Mobile viewport
+curl "https://your-api-gateway-url/?url=https://example.com&width=375&height=667"
+
+# Large desktop viewport
+curl "https://your-api-gateway-url/?url=https://example.com&width=2560&height=1440"
 ```
 
 ### Response Format
