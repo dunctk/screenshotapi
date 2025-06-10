@@ -4,8 +4,16 @@ ARG APP_NAME=screenshotapi
 # 1) Compile your Rust binary in a builder stage
 FROM public.ecr.aws/lambda/provided:al2023 AS builder
 
-# Install build dependencies, including tar
-RUN dnf install -y gcc make openssl-devel tar
+# Install build dependencies, including tar and xz (for Zig)
+RUN dnf install -y gcc make openssl-devel tar xz
+
+# Install Zig, which is required by cargo-lambda
+ENV ZIG_VERSION=0.13.0
+RUN curl -L "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" -o /tmp/zig.tar.xz && \
+    tar -xf /tmp/zig.tar.xz -C /usr/local/ && \
+    mv /usr/local/zig-linux-x86_64-${ZIG_VERSION} /usr/local/zig && \
+    rm /tmp/zig.tar.xz
+ENV PATH="/usr/local/zig:${PATH}"
 
 # Install Rust & cargo-lambda
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
