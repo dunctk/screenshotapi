@@ -22,6 +22,9 @@ RUN cargo lambda build --release --bin screenshotapi
 # 2) Final image: install Chromium and copy your function
 FROM public.ecr.aws/lambda/provided:al2023
 
+# Copy tar from the builder stage, where we have installed it.
+COPY --from=builder /usr/bin/tar /usr/bin/
+
 # Download and install the sparticuz-chromium build using tar
 ENV CHROMIUM_VERSION=121.0.0
 RUN curl -Ls https://github.com/Sparticuz/chromium/releases/download/v${CHROMIUM_VERSION}/chromium-v${CHROMIUM_VERSION}-pack.tar.gz | tar -xz -C /opt
