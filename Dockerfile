@@ -42,12 +42,12 @@ RUN curl -Ls -o /tmp/chromium.tar \
         # create the final target directory
         && mkdir -p /opt/chromium \
         # 1) platform specific libs
-        && tar --use-compress-program=br -xf /tmp/al2023.tar.br   -C /opt/chromium \
+        && tar --use-compress-program=brotli -xf /tmp/al2023.tar.br   -C /opt/chromium \
         # 2) the headless_shell binary
         && brotli -d /tmp/chromium.br -o /opt/chromium/chrome \
         # 3) optional fonts and SwiftShader
-        && tar --use-compress-program=br -xf /tmp/fonts.tar.br     -C /opt/chromium \
-        && tar --use-compress-program=br -xf /tmp/swiftshader.tar.br -C /opt/chromium \
+        && tar --use-compress-program=brotli -xf /tmp/fonts.tar.br     -C /opt/chromium \
+        && tar --use-compress-program=brotli -xf /tmp/swiftshader.tar.br -C /opt/chromium \
         && chmod +x /opt/chromium/chrome \
         && rm -rf /tmp/*.br /tmp/chromium.tar
 ENV PATH="/opt:${PATH}"
