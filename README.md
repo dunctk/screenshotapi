@@ -1,6 +1,6 @@
 # Screenshot API - AWS Lambda Function
 
-![Screenshot API Logo](docs/screenshot-api.png)
+![Screenshot API Logo](docs/logo_small.png)
 
 ## 🚀 **Ready to Use? Skip the Setup!**
 
