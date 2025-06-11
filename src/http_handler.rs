@@ -30,9 +30,8 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
             .and_then(|v| v.to_str().ok());
 
         // Fallback: query parameter `key`
-        let provided_key_query = event
-            .query_string_parameters()
-            .first("key");
+        let query_params = event.query_string_parameters();
+        let provided_key_query = query_params.first("key");
 
         let provided_key = provided_key_header.or(provided_key_query);
 
