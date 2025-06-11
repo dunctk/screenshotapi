@@ -56,7 +56,7 @@ impl ScreenshotService {
             ))?;
 
         // Configure browser for Lambda environment with more aggressive flags
-        let chrome_args: Vec<&OsStr> = vec![
+        let chrome_args: Vec<&'static OsStr> = vec![
             // Core Lambda compatibility
             OsStr::new("--no-sandbox"),
             OsStr::new("--disable-setuid-sandbox"),
@@ -117,19 +117,9 @@ impl ScreenshotService {
             OsStr::new("--user-data-dir=/tmp/chrome-user-data"),
         ];
 
-        // Create launch options with increased timeout
-        let options = LaunchOptions {
-            path: Some(chrome_path),
-            args: chrome_args,
-            headless: true,
-            sandbox: false,
-            idle_browser_timeout: Duration::from_secs(10),
-            ..LaunchOptions::default()
-        };
-
         // Launch browser with retry logic
-        println!("Launching browser with path: {:?}", options.path);
-        let browser = launch_browser_with_retry(options, 3)
+        println!("Launching browser with path: {:?}", chrome_path);
+        let browser = launch_browser_with_retry(chrome_path.clone(), chrome_args.clone(), 3)
             .map_err(|e| ScreenshotError::BrowserLaunch(format!("Browser launch failed after retries: {}", e)))?;
         
         println!("Browser launched successfully");
@@ -248,29 +238,27 @@ fn setup_lambda_env() {
     env::set_var("CHROME_NO_SANDBOX", "1");
     env::set_var("DISPLAY", ":99");
     
+    env::set_var("LD_LIBRARY_PATH", "/opt/chromium:/opt/chromium/lib:/opt/chromium/swiftshader");
+    
     println!("Lambda environment variables set");
 }
 
 /// Launch browser with retry logic to handle intermittent failures
-fn launch_browser_with_retry(options: LaunchOptions, max_retries: u32) -> Result<Browser, String> {
+fn launch_browser_with_retry(chrome_path: PathBuf, chrome_args: Vec<&'static OsStr>, max_retries: u32) -> Result<Browser, String> {
     let mut last_error = String::new();
-    
-    // Store the configuration parameters to recreate LaunchOptions each time
-    let chrome_path = options.path.clone();
-    let chrome_args = options.args.clone();
     
     for attempt in 1..=max_retries {
         println!("Browser launch attempt {} of {}", attempt, max_retries);
         
         // Create fresh LaunchOptions for each attempt
-        let fresh_options = LaunchOptions {
-            path: chrome_path.clone(),
-            args: chrome_args.clone(),
-            headless: true,
-            sandbox: false,
-            idle_browser_timeout: Duration::from_secs(10),
-            ..LaunchOptions::default()
-        };
+        let fresh_options = LaunchOptions::default_builder()
+            .path(Some(chrome_path.clone()))
+            .args(chrome_args.clone())
+            .headless(true)
+            .sandbox(false)
+            .idle_browser_timeout(Duration::from_secs(10))
+            .build()
+            .map_err(|e| format!("Browser launch failed: {}", e))?;
         
         match Browser::new(fresh_options) {
             Ok(browser) => {

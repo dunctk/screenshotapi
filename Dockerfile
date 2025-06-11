@@ -30,6 +30,7 @@ ENV PATH="/opt/chromium:${PATH}"
 ENV FONTCONFIG_PATH="/opt/chromium"
 ENV CHROME_NO_SANDBOX=1
 ENV DISPLAY=:99
+ENV LD_LIBRARY_PATH="/opt/chromium:/opt/chromium/lib:/opt/chromium/swiftshader"
 
 # Create a basic fonts.conf for Chrome
 RUN echo '<?xml version="1.0"?>' > /opt/chromium/fonts.conf && \
