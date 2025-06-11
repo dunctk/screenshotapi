@@ -45,8 +45,8 @@ RUN echo '<?xml version="1.0"?>' > /opt/chromium/fonts.conf && \
 RUN mkdir -p /tmp/chrome-data /tmp/chrome-cache /tmp/chrome-user-data /tmp/.config /tmp/.cache /tmp/.local/share /tmp/.fontconfig \
     && chmod -R 755 /tmp/chrome-data /tmp/chrome-cache /tmp/chrome-user-data /tmp/.config /tmp/.cache /tmp/.local /tmp/.fontconfig
 
-# 2) Compile your Rust binary in a builder stage
-FROM base AS builder
+# 2) Set up Rust toolchain and cargo-chef
+FROM base AS chef
 
 # Install Zig, which is required by cargo-lambda
 ENV ZIG_VERSION=0.13.0
@@ -56,19 +56,29 @@ RUN curl -L "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_
     rm /tmp/zig.tar.xz
 ENV PATH="/usr/local/zig:${PATH}"
 
-# Install Rust & cargo-lambda
+# Install Rust & cargo tools
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-RUN cargo install cargo-lambda
+RUN cargo install cargo-chef cargo-lambda
 
-# Copy your source code
 WORKDIR /src
-COPY . .
 
-# Build for x86_64
+# 3) Prepare the recipe file
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+# 4) Build dependencies (this layer will be cached)
+FROM chef AS builder
+COPY --from=planner /src/recipe.json recipe.json
+# Build dependencies - this is the caching Docker layer!
+RUN cargo chef cook --release --recipe-path recipe.json --target x86_64-unknown-linux-gnu
+
+# Build application
+COPY . .
 RUN cargo lambda build --release --bin screenshotapi
 
-# 3) Final image: copy everything together
+# 5) Final image: copy everything together
 FROM base
 
 # Copy the built binary from the builder stage
