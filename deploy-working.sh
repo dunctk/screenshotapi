@@ -126,7 +126,7 @@ echo -e "${BLUE}🧪 Step 7: Testing deployment...${NC}"
 # Add a small delay to ensure the URL is fully propagated
 sleep 5 
 
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${FUNCTION_URL}" -H "Content-Type: application/json" -d '{"url":"https://example.com"}')
+RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "${FUNCTION_URL}?url=https://example.com")
 echo "Test Response HTTP Code: $RESPONSE"
 echo ""
 
@@ -140,5 +140,5 @@ fi
 
 echo ""
 echo -e "${BLUE}Test with:${NC}"
-echo "curl -X POST \"${FUNCTION_URL}\" -H \"Content-Type: application/json\" -d '{\"url\":\"https://www.google.com\"}' --output screenshot.png"
+echo "curl \"${FUNCTION_URL}?url=https://www.google.com\" --output screenshot.png"
 echo ""
