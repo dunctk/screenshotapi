@@ -31,3 +31,4 @@ jobs:
         run: ./deploy-working.sh 
         env:
           API_KEY: ${{ secrets.SCREENSHOT_API_KEY }} 
+          RAPIDAPI_PROXY_SECRET: ${{ secrets.RAPIDAPI_PROXY_SECRET }} 

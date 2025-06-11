@@ -18,11 +18,32 @@ struct SuccessResponse {
 
 /// Main function handler for the screenshot API
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
-    // --- Simple API key check ---
-    // Expected key (set via Lambda environment variable `API_KEY`)
-    let expected_key = env::var("API_KEY").unwrap_or_default();
+    // --- Authentication ---
+    let expected_api_key = env::var("API_KEY").unwrap_or_default();
+    let rapidapi_secret = env::var("RAPIDAPI_PROXY_SECRET").unwrap_or_default();
 
-    if !expected_key.is_empty() {
+    let mut authorized = false;
+
+    // If no keys are configured, allow the request (e.g. for local dev)
+    if expected_api_key.is_empty() && rapidapi_secret.is_empty() {
+        authorized = true;
+    }
+
+    // 1. Check for RapidAPI Proxy Secret
+    if !authorized && !rapidapi_secret.is_empty() {
+        if let Some(proxy_secret) = event
+            .headers()
+            .get("X-RapidAPI-Proxy-Secret")
+            .and_then(|v| v.to_str().ok())
+        {
+            if proxy_secret == rapidapi_secret {
+                authorized = true;
+            }
+        }
+    }
+
+    // 2. Check for standard API key (header or query param)
+    if !authorized && !expected_api_key.is_empty() {
         // Try to read from `x-api-key` header first
         let provided_key_header = event
             .headers()
@@ -35,21 +56,25 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
 
         let provided_key = provided_key_header.or(provided_key_query);
 
-        if provided_key != Some(expected_key.as_str()) {
-            // Unauthorized
-            let error_response = ErrorResponse {
-                error: "UNAUTHORIZED".to_string(),
-                message: "Invalid or missing API key".to_string(),
-            };
-
-            let resp = Response::builder()
-                .status(401)
-                .header("content-type", "application/json")
-                .body(serde_json::to_string(&error_response)?.into())
-                .map_err(Box::new)?;
-
-            return Ok(resp);
+        if provided_key == Some(expected_api_key.as_str()) {
+            authorized = true;
         }
+    }
+
+    if !authorized {
+        // Unauthorized
+        let error_response = ErrorResponse {
+            error: "UNAUTHORIZED".to_string(),
+            message: "Invalid or missing API key".to_string(),
+        };
+
+        let resp = Response::builder()
+            .status(401)
+            .header("content-type", "application/json")
+            .body(serde_json::to_string(&error_response)?.into())
+            .map_err(Box::new)?;
+
+        return Ok(resp);
     }
 
     match handle_screenshot_request(event).await {

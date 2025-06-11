@@ -74,6 +74,25 @@ echo ""
 # --- Step 5: Deploy Lambda Function ---
 echo -e "${BLUE}🚀 Step 5: Deploying Lambda function...${NC}"
 
+# Construct environment variables string
+ENV_VARS_STRING=""
+if [ -n "$API_KEY" ]; then
+    ENV_VARS_STRING="API_KEY=${API_KEY}"
+fi
+if [ -n "$RAPIDAPI_PROXY_SECRET" ]; then
+    if [ -n "$ENV_VARS_STRING" ]; then
+        ENV_VARS_STRING="${ENV_VARS_STRING},RAPIDAPI_PROXY_SECRET=${RAPIDAPI_PROXY_SECRET}"
+    else
+        ENV_VARS_STRING="RAPIDAPI_PROXY_SECRET=${RAPIDAPI_PROXY_SECRET}"
+    fi
+fi
+
+# Construct the CLI argument for environment variables if any are set
+ENVIRONMENT_ARG=""
+if [ -n "$ENV_VARS_STRING" ]; then
+    ENVIRONMENT_ARG="--environment Variables={${ENV_VARS_STRING}}"
+fi
+
 # Check if the function already exists
 if aws lambda get-function --function-name "${FUNCTION_NAME}" --region "${REGION}" >/dev/null 2>&1; then
     # Function exists, so we update it
@@ -92,7 +111,7 @@ if aws lambda get-function --function-name "${FUNCTION_NAME}" --region "${REGION
         --role "${ROLE_ARN}" \
         --memory-size 2048 \
         --timeout 90 \
-        ${API_KEY:+--environment "Variables={API_KEY=$API_KEY}"} \
+        ${ENVIRONMENT_ARG} \
         --region "${REGION}" > /dev/null
     
     echo "Waiting for function configuration to update..."
@@ -110,7 +129,7 @@ else
         --region "${REGION}" \
         --memory-size 2048 \
         --timeout 90 \
-        ${API_KEY:+--environment "Variables={API_KEY=$API_KEY}"} \
+        ${ENVIRONMENT_ARG} \
         --architectures x86_64 > /dev/null
 
     echo "Waiting for function to become active..."
