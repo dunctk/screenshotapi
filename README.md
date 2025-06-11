@@ -1,5 +1,22 @@
 # Screenshot API - AWS Lambda Function
 
+![Screenshot API Logo](docs/screenshot-api.png)
+
+## 🚀 **Ready to Use? Skip the Setup!**
+
+**Get instant access to our hosted Screenshot API on RapidAPI for just 1¢ per screenshot!**
+
+✅ **No monthly commitment** - Pay only for what you use  
+✅ **No subscription fees** - Simple, transparent pricing  
+✅ **Instant setup** - Start taking screenshots in seconds  
+✅ **99.9% uptime** - Production-ready infrastructure  
+
+**[🔥 Get Started on RapidAPI →](https://rapidapi.com/dunctk/api/screenshot-web-api)**
+
+---
+
+*Want to self-host instead? Continue reading for deployment instructions.*
+
 A serverless screenshot API built with Rust and Chromium, designed to run on AWS Lambda.
 
 ## Features
@@ -258,3 +275,19 @@ The API handles various error scenarios:
 ## License
 
 MIT License - see LICENSE file for details.
+
+---
+
+## 🎯 **Ready to Start Taking Screenshots?**
+
+**Why spend hours setting up infrastructure when you can start immediately?**
+
+Our hosted Screenshot API on RapidAPI gives you:
+- **Instant access** - No deployment, no configuration
+- **Only 1¢ per screenshot** - The most affordable solution
+- **No monthly fees** - Pay as you go
+- **Enterprise-grade reliability** - 99.9% uptime 
+
+### **[🚀 Start Using the API Now →](https://rapidapi.com/dunctk/api/screenshot-web-api)**
+
+
