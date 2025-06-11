@@ -73,45 +73,79 @@ echo ""
 
 # --- Step 5: Deploy Lambda Function ---
 echo -e "${BLUE}🚀 Step 5: Deploying Lambda function...${NC}"
-# Delete the function if it exists to ensure a clean deployment
-aws lambda delete-function --function-name "${FUNCTION_NAME}" --region "${REGION}" 2>/dev/null || true
-echo "Waiting for old function to be deleted..."
-sleep 5 
 
-aws lambda create-function \
-    --function-name "${FUNCTION_NAME}" \
-    --package-type Image \
-    --code ImageUri="${IMAGE_URI}" \
-    --role "${ROLE_ARN}" \
-    --region "${REGION}" \
-    --memory-size 2048 \
-    --timeout 90 \
-    ${API_KEY:+--environment "Variables={API_KEY=$API_KEY}"} \
-    --architectures x86_64 > /dev/null
+# Check if the function already exists
+if aws lambda get-function --function-name "${FUNCTION_NAME}" --region "${REGION}" >/dev/null 2>&1; then
+    # Function exists, so we update it
+    echo "Function '${FUNCTION_NAME}' exists. Updating code and configuration..."
+    
+    aws lambda update-function-code \
+        --function-name "${FUNCTION_NAME}" \
+        --image-uri "${IMAGE_URI}" \
+        --region "${REGION}" > /dev/null
 
-echo "Waiting for function to become active..."
-aws lambda wait function-active-v2 --function-name "${FUNCTION_NAME}" --region "${REGION}"
-echo -e "${GREEN}✅ Lambda function deployed successfully.${NC}"
+    echo "Waiting for function code to update..."
+    aws lambda wait function-updated-v2 --function-name "${FUNCTION_NAME}" --region "${REGION}"
+
+    aws lambda update-function-configuration \
+        --function-name "${FUNCTION_NAME}" \
+        --role "${ROLE_ARN}" \
+        --memory-size 2048 \
+        --timeout 90 \
+        ${API_KEY:+--environment "Variables={API_KEY=$API_KEY}"} \
+        --region "${REGION}" > /dev/null
+    
+    echo "Waiting for function configuration to update..."
+    aws lambda wait function-updated-v2 --function-name "${FUNCTION_NAME}" --region "${REGION}"
+    
+    echo -e "${GREEN}✅ Lambda function updated successfully.${NC}"
+else
+    # Function does not exist, so we create it
+    echo "Function '${FUNCTION_NAME}' does not exist. Creating new function..."
+    aws lambda create-function \
+        --function-name "${FUNCTION_NAME}" \
+        --package-type Image \
+        --code ImageUri="${IMAGE_URI}" \
+        --role "${ROLE_ARN}" \
+        --region "${REGION}" \
+        --memory-size 2048 \
+        --timeout 90 \
+        ${API_KEY:+--environment "Variables={API_KEY=$API_KEY}"} \
+        --architectures x86_64 > /dev/null
+
+    echo "Waiting for function to become active..."
+    aws lambda wait function-active-v2 --function-name "${FUNCTION_NAME}" --region "${REGION}"
+    echo -e "${GREEN}✅ Lambda function created successfully.${NC}"
+fi
 echo ""
 
 # --- Step 6: Configure Function URL ---
 echo -e "${BLUE}🌐 Step 6: Setting up Function URL...${NC}"
-# Delete existing URL config if it exists
-aws lambda delete-function-url-config --function-name $FUNCTION_NAME --region $REGION 2>/dev/null || true
-# Create new URL config
-aws lambda create-function-url-config \
-    --function-name "${FUNCTION_NAME}" \
-    --auth-type NONE \
-    --cors '{"AllowMethods":["GET","POST"],"AllowOrigins":["*"]}' \
-    --region "${REGION}" > /dev/null
-# Add permission for public access
-aws lambda add-permission \
-    --function-name "${FUNCTION_NAME}" \
-    --statement-id FunctionURLAllowPublicAccess \
-    --action lambda:InvokeFunctionUrl \
-    --principal "*" \
-    --function-url-auth-type NONE \
-    --region "${REGION}" >/dev/null 2>&1 || true
+
+# Check if Function URL exists. If not, create it.
+if ! aws lambda get-function-url-config --function-name "${FUNCTION_NAME}" --region "${REGION}" >/dev/null 2>&1; then
+    echo "Function URL not found. Creating a new one..."
+    # Create new URL config
+    aws lambda create-function-url-config \
+        --function-name "${FUNCTION_NAME}" \
+        --auth-type NONE \
+        --cors '{"AllowMethods":["GET","POST"],"AllowOrigins":["*"]}' \
+        --region "${REGION}" > /dev/null
+    
+    # Add permission for public access to the Function URL
+    # This might fail if the permission already exists, so we ignore errors.
+    echo "Adding public access permission..."
+    aws lambda add-permission \
+        --function-name "${FUNCTION_NAME}" \
+        --statement-id FunctionURLAllowPublicAccess \
+        --action lambda:InvokeFunctionUrl \
+        --principal "*" \
+        --function-url-auth-type NONE \
+        --region "${REGION}" >/dev/null 2>&1 || true
+    echo -e "${GREEN}✅ Function URL created and configured.${NC}"
+else
+    echo "Function URL already exists. Skipping creation."
+fi
 
 FUNCTION_URL=$(aws lambda get-function-url-config \
     --function-name "${FUNCTION_NAME}" \
