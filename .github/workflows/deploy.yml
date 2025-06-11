@@ -29,3 +29,5 @@ jobs:
 
       - name: Run Deployment Script
         run: ./deploy-working.sh 
+        env:
+          API_KEY: ${{ secrets.SCREENSHOT_API_KEY }} 

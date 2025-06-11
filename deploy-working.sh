@@ -86,6 +86,7 @@ aws lambda create-function \
     --region "${REGION}" \
     --memory-size 2048 \
     --timeout 90 \
+    ${API_KEY:+--environment "Variables={API_KEY=$API_KEY}"} \
     --architectures x86_64 > /dev/null
 
 echo "Waiting for function to become active..."

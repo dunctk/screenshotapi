@@ -1,6 +1,7 @@
 use lambda_http::{Body, Error, Request, RequestExt, Response};
 use serde::Serialize;
 use crate::screenshot::ScreenshotService;
+use std::env;
 
 #[derive(Serialize)]
 struct ErrorResponse {
@@ -17,6 +18,41 @@ struct SuccessResponse {
 
 /// Main function handler for the screenshot API
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
+    // --- Simple API key check ---
+    // Expected key (set via Lambda environment variable `API_KEY`)
+    let expected_key = env::var("API_KEY").unwrap_or_default();
+
+    if !expected_key.is_empty() {
+        // Try to read from `x-api-key` header first
+        let provided_key_header = event
+            .headers()
+            .get("x-api-key")
+            .and_then(|v| v.to_str().ok());
+
+        // Fallback: query parameter `key`
+        let provided_key_query = event
+            .query_string_parameters()
+            .first("key");
+
+        let provided_key = provided_key_header.or(provided_key_query);
+
+        if provided_key != Some(expected_key.as_str()) {
+            // Unauthorized
+            let error_response = ErrorResponse {
+                error: "UNAUTHORIZED".to_string(),
+                message: "Invalid or missing API key".to_string(),
+            };
+
+            let resp = Response::builder()
+                .status(401)
+                .header("content-type", "application/json")
+                .body(serde_json::to_string(&error_response)?.into())
+                .map_err(Box::new)?;
+
+            return Ok(resp);
+        }
+    }
+
     match handle_screenshot_request(event).await {
         Ok(response) => Ok(response),
         Err(e) => {

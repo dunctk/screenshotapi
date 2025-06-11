@@ -164,6 +164,44 @@ aws apigatewayv2 create-api \
 The function works out of the box but you can configure:
 
 - `RUST_LOG`: Set logging level (e.g., "info", "debug")
+- `API_KEY`: **Optional.** If set, every request must provide this value either in the `x-api-key` HTTP header **or** as the `key` query-string parameter. Omit the variable to disable authentication (useful for local testing).
+
+### Setting `API_KEY`
+
+Once the Lambda function exists you can set / change the key at any time:
+
+```bash
+# one-off update (keeps existing image & config)
+aws lambda update-function-configuration \
+  --function-name screenshotapi \
+  --environment "Variables={API_KEY=your-secret-value}" \
+  --region eu-central-1
+```
+
+The key persists for the lifetime of the function. **However:** the sample `deploy-working.sh` script currently deletes and recreates the function on each deploy. If you use that script you have two options:
+
+1. Add `--environment "Variables={API_KEY=your-secret-value}"` to the `aws lambda create-function` call inside the script so the key is applied on every deploy.
+2. Stop deleting the function (remove the `aws lambda delete-function` call). Updating an existing function keeps its environment variables intact.
+
+### Calling the API with the key
+
+```bash
+# Header style
+curl -H "x-api-key: your-secret-value" "${FUNCTION_URL}?url=https://example.com" | jq .
+
+# Query-string style (handy for quick browser tests)
+curl "${FUNCTION_URL}?url=https://example.com&key=your-secret-value" | jq .
+```
+
+Requests without the correct key receive:
+
+```json
+HTTP/1.1 401 Unauthorized
+{
+  "error": "UNAUTHORIZED",
+  "message": "Invalid or missing API key"
+}
+```
 
 ### Lambda Configuration Recommendations
 
