@@ -196,14 +196,15 @@ impl ScreenshotService {
 
 /// Try to find Chrome executable in common locations
 fn find_chrome_executable() -> Option<PathBuf> {
-    // Path for the self-contained sparticuz-chromium build
-    let chrome_path = "/opt/chromium/chrome";
-    let path_buf = PathBuf::from(chrome_path);
-    if path_buf.exists() {
-        println!("Found Chromium at: {}", chrome_path);
-        return Some(path_buf);
+    for p in [
+        "/opt/chromium/chrome",  // after full decompression
+        "/opt/chrome",           // present in older layer zips
+    ] {
+        let pb = PathBuf::from(p);
+        if pb.exists() {
+            println!("Found Chromium at: {p}");
+            return Some(pb);
+        }
     }
-    
-    println!("Chromium executable not found at {}", chrome_path);
     None
-} 
+}
