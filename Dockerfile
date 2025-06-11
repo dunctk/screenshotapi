@@ -24,7 +24,26 @@ RUN curl -Ls -o /tmp/chromium.tar \
         && tar --use-compress-program=brotli -xf /tmp/swiftshader.tar.br -C /opt/chromium \
         && chmod +x /opt/chromium/chrome \
         && rm -rf /tmp/*.br /tmp/chromium.tar
+
+# Set up Chrome environment
 ENV PATH="/opt/chromium:${PATH}"
+ENV FONTCONFIG_PATH="/opt/chromium"
+ENV CHROME_NO_SANDBOX=1
+ENV DISPLAY=:99
+
+# Create a basic fonts.conf for Chrome
+RUN echo '<?xml version="1.0"?>' > /opt/chromium/fonts.conf && \
+    echo '<fontconfig>' >> /opt/chromium/fonts.conf && \
+    echo '  <dir>/opt/chromium</dir>' >> /opt/chromium/fonts.conf && \
+    echo '  <cachedir>/tmp/.fontconfig</cachedir>' >> /opt/chromium/fonts.conf && \
+    echo '  <config>' >> /opt/chromium/fonts.conf && \
+    echo '    <rescan><int>30</int></rescan>' >> /opt/chromium/fonts.conf && \
+    echo '  </config>' >> /opt/chromium/fonts.conf && \
+    echo '</fontconfig>' >> /opt/chromium/fonts.conf
+
+# Create necessary directories for Chrome with proper permissions
+RUN mkdir -p /tmp/chrome-data /tmp/chrome-cache /tmp/chrome-user-data /tmp/.config /tmp/.cache /tmp/.local/share /tmp/.fontconfig \
+    && chmod -R 755 /tmp/chrome-data /tmp/chrome-cache /tmp/chrome-user-data /tmp/.config /tmp/.cache /tmp/.local /tmp/.fontconfig
 
 # 2) Compile your Rust binary in a builder stage
 FROM base AS builder

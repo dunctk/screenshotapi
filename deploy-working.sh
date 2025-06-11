@@ -85,7 +85,7 @@ aws lambda create-function \
     --role "${ROLE_ARN}" \
     --region "${REGION}" \
     --memory-size 2048 \
-    --timeout 60 \
+    --timeout 90 \
     --architectures x86_64 > /dev/null
 
 echo "Waiting for function to become active..."
